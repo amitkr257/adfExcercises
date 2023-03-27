@@ -1,0 +1,95 @@
+{
+	"name": "asgn8Q3",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "CUSTOMER_DS_DATAFLOW",
+						"type": "DatasetReference"
+					},
+					"name": "cust"
+				},
+				{
+					"dataset": {
+						"referenceName": "CUSTOMER_ADD_DS_DATAFLOW",
+						"type": "DatasetReference"
+					},
+					"name": "custAdd"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "PARQUET_GENERIC_DS",
+						"type": "DatasetReference"
+					},
+					"name": "dumpasParquet",
+					"rejectedDataLinkedService": {
+						"referenceName": "AzureDataLakeStorage1",
+						"type": "LinkedServiceReference"
+					}
+				}
+			],
+			"transformations": [
+				{
+					"name": "joincustAdd"
+				},
+				{
+					"name": "filterCustId"
+				},
+				{
+					"name": "sort"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerID as integer,",
+				"          NameStyle as boolean,",
+				"          Title as string,",
+				"          FirstName as string,",
+				"          MiddleName as string,",
+				"          LastName as string,",
+				"          Suffix as string,",
+				"          CompanyName as string,",
+				"          SalesPerson as string,",
+				"          EmailAddress as string,",
+				"          Phone as string,",
+				"          PasswordHash as string,",
+				"          PasswordSalt as string,",
+				"          rowguid as string,",
+				"          ModifiedDate as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> cust",
+				"source(output(",
+				"          CustomerID as integer,",
+				"          AddressID as short,",
+				"          AddressType as string,",
+				"          rowguid as string,",
+				"          ModifiedDate as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> custAdd",
+				"cust, custAdd join(cust@CustomerID == custAdd@CustomerID,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> joincustAdd",
+				"joincustAdd filter(cust@CustomerID > 20000 && cust@CustomerID < 30000) ~> filterCustId",
+				"filterCustId sort(asc(cust@CustomerID, true)) ~> sort",
+				"sort sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> dumpasParquet"
+			]
+		}
+	}
+}

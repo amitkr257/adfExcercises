@@ -1,0 +1,9 @@
+{
+	"name": "amitkdatafactory",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "17f346b6-72b7-44f8-86f4-24ac9cd9482b",
+		"tenantId": "70e623ce-f604-472f-a157-583c63da5584"
+	}
+}

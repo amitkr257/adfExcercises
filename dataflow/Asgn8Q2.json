@@ -1,0 +1,108 @@
+{
+	"name": "Asgn8Q2",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "CUSTOMER_DS_DATAFLOW",
+						"type": "DatasetReference"
+					},
+					"name": "custSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "CUSTOMER_ADD_DS_DATAFLOW",
+						"type": "DatasetReference"
+					},
+					"name": "custAddSource"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "JSON_GENERIC_DS",
+						"type": "DatasetReference"
+					},
+					"name": "dumpasJson",
+					"rejectedDataLinkedService": {
+						"referenceName": "AzureDataLakeStorage1",
+						"type": "LinkedServiceReference"
+					}
+				}
+			],
+			"transformations": [
+				{
+					"name": "joinCustAdd"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerID as short,",
+				"          NameStyle as boolean,",
+				"          Title as string,",
+				"          FirstName as string,",
+				"          MiddleName as string,",
+				"          LastName as string,",
+				"          Suffix as string,",
+				"          CompanyName as string,",
+				"          SalesPerson as string,",
+				"          EmailAddress as string,",
+				"          Phone as string,",
+				"          PasswordHash as string,",
+				"          PasswordSalt as string,",
+				"          rowguid as string,",
+				"          ModifiedDate as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> custSource",
+				"source(output(",
+				"          CustomerID as short,",
+				"          AddressID as short,",
+				"          AddressType as string,",
+				"          rowguid as string,",
+				"          ModifiedDate as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> custAddSource",
+				"custSource, custAddSource join(custSource@CustomerID == custAddSource@CustomerID,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> joinCustAdd",
+				"joinCustAdd sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          CustomerID = custSource@CustomerID,",
+				"          NameStyle,",
+				"          Title,",
+				"          FirstName,",
+				"          MiddleName,",
+				"          LastName,",
+				"          Suffix,",
+				"          CompanyName,",
+				"          SalesPerson,",
+				"          EmailAddress,",
+				"          Phone,",
+				"          PasswordHash,",
+				"          PasswordSalt,",
+				"          rowguid = custSource@rowguid,",
+				"          ModifiedDate = custSource@ModifiedDate,",
+				"          CustomerID = custAddSource@CustomerID,",
+				"          AddressID,",
+				"          AddressType,",
+				"          rowguid = custAddSource@rowguid,",
+				"          ModifiedDate = custAddSource@ModifiedDate",
+				"     )) ~> dumpasJson"
+			]
+		}
+	}
+}

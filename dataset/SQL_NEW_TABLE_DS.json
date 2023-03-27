@@ -1,0 +1,17 @@
+{
+	"name": "SQL_NEW_TABLE_DS",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureSqlDatabase1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "CustomerCopy"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
