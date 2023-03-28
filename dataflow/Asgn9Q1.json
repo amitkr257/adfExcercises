@@ -1,0 +1,148 @@
+{
+	"name": "Asgn9Q1",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "CUSTOMER_DS_DATAFLOW",
+						"type": "DatasetReference"
+					},
+					"name": "custCSV"
+				},
+				{
+					"dataset": {
+						"referenceName": "ASGN9_SQL_DS",
+						"type": "DatasetReference"
+					},
+					"name": "sampleCust"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ASGN9_SQL_DS",
+						"type": "DatasetReference"
+					},
+					"name": "updateDB"
+				},
+				{
+					"dataset": {
+						"referenceName": "ASGN9_SQL_DS",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDB"
+				}
+			],
+			"transformations": [
+				{
+					"name": "oddCust"
+				},
+				{
+					"name": "joinDBndCSV"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "filterNonNULLS"
+				},
+				{
+					"name": "AlterRow1"
+				},
+				{
+					"name": "filterNullOnly"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerID as integer,",
+				"          NameStyle as boolean,",
+				"          Title as string,",
+				"          FirstName as string,",
+				"          MiddleName as string,",
+				"          LastName as string,",
+				"          Suffix as string,",
+				"          CompanyName as string,",
+				"          SalesPerson as string,",
+				"          EmailAddress as string,",
+				"          Phone as string,",
+				"          PasswordHash as string,",
+				"          PasswordSalt as string,",
+				"          rowguid as string,",
+				"          ModifiedDate as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> custCSV",
+				"source(output(",
+				"          CID as integer,",
+				"          name as string,",
+				"          mailId as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> sampleCust",
+				"custCSV filter(CustomerID %2 != 0) ~> oddCust",
+				"select1, select2 join(CustomerID == CID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> joinDBndCSV",
+				"oddCust select(mapColumn(",
+				"          CustomerID,",
+				"          FirstName,",
+				"          EmailAddress",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"sampleCust select(mapColumn(",
+				"          CID",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"joinDBndCSV filter(!isNull(CID)) ~> filterNonNULLS",
+				"filterNonNULLS alterRow(updateIf(CustomerID==CID)) ~> AlterRow1",
+				"joinDBndCSV filter(isNull(CID)) ~> filterNullOnly",
+				"AlterRow1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:true,",
+				"     upsertable:false,",
+				"     keys:['CID'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     saveOrder: 1,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          CID,",
+				"          name = FirstName,",
+				"          mailId = EmailAddress",
+				"     )) ~> updateDB",
+				"filterNullOnly sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     saveOrder: 2,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          CID = CustomerID,",
+				"          name = FirstName,",
+				"          mailId = EmailAddress",
+				"     )) ~> InsertDB"
+			]
+		}
+	}
+}

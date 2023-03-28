@@ -1,0 +1,16 @@
+{
+	"name": "ASGN9_SQL_DS",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureSqlDatabase1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "SalesLT",
+			"table": "cust_asgn9"
+		}
+	}
+}
