@@ -1,0 +1,163 @@
+{
+	"name": "Asgn9Q2",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "SCD_3_DS",
+						"type": "DatasetReference"
+					},
+					"name": "SCD3INP"
+				},
+				{
+					"dataset": {
+						"referenceName": "SCD_SQL_TABLE",
+						"type": "DatasetReference"
+					},
+					"name": "SCD3Table"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "SCD_SQL_TABLE",
+						"type": "DatasetReference"
+					},
+					"name": "UPDATE"
+				},
+				{
+					"dataset": {
+						"referenceName": "SCD_SQL_TABLE",
+						"type": "DatasetReference"
+					},
+					"name": "INSERT"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select1"
+				},
+				{
+					"name": "join1"
+				},
+				{
+					"name": "filterNonNulls"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "effectiveDateDerivation"
+				},
+				{
+					"name": "AlterRow1"
+				},
+				{
+					"name": "filterNULLS"
+				},
+				{
+					"name": "derivedColumn1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerID as integer,",
+				"          FirstName as string,",
+				"          Email_ID as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> SCD3INP",
+				"source(output(",
+				"          CID as integer,",
+				"          name as string,",
+				"          original_mailId as string,",
+				"          current_mail_id as string,",
+				"          effective_date as date",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> SCD3Table",
+				"SCD3Table select(mapColumn(",
+				"          CID,",
+				"          original_mailId,",
+				"          current_mail_id,",
+				"          effective_date",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"SCD3INP, SCD3Table join(CustomerID == CID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"join1 filter(!isNull(CID)) ~> filterNonNulls",
+				"filterNonNulls select(mapColumn(",
+				"          Email_ID,",
+				"          current_mail_id,",
+				"          effective_date,",
+				"          CID",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"select2 derive(effective_date = currentDate()) ~> effectiveDateDerivation",
+				"effectiveDateDerivation alterRow(updateIf(Email_ID != current_mail_id)) ~> AlterRow1",
+				"join1 filter(isNull(CID)) ~> filterNULLS",
+				"filterNULLS derive(effective_date = currentDate(),",
+				"          cur_email_id = Email_ID) ~> derivedColumn1",
+				"AlterRow1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          CID as integer,",
+				"          name as string,",
+				"          original_mailId as string,",
+				"          current_mail_id as string,",
+				"          effective_date as date",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:true,",
+				"     upsertable:false,",
+				"     keys:['CID'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     saveOrder: 1,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          current_mail_id = Email_ID,",
+				"          effective_date,",
+				"          CID",
+				"     )) ~> UPDATE",
+				"derivedColumn1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          CID as integer,",
+				"          name as string,",
+				"          original_mailId as string,",
+				"          current_mail_id as string,",
+				"          effective_date as date",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     saveOrder: 2,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          CID = CustomerID,",
+				"          name = FirstName,",
+				"          original_mailId = Email_ID,",
+				"          current_mail_id = cur_email_id,",
+				"          effective_date",
+				"     )) ~> INSERT"
+			]
+		}
+	}
+}
