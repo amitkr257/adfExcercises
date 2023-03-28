@@ -22,17 +22,17 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "SCD_SQL_TABLE",
-						"type": "DatasetReference"
-					},
-					"name": "UPDATE"
-				},
-				{
-					"dataset": {
-						"referenceName": "SCD_SQL_TABLE",
+						"referenceName": "SQL_SCD_NEW_DS",
 						"type": "DatasetReference"
 					},
 					"name": "INSERT"
+				},
+				{
+					"dataset": {
+						"referenceName": "SQL_SCD_NEW_DS",
+						"type": "DatasetReference"
+					},
+					"name": "UPDATE"
 				}
 			],
 			"transformations": [
@@ -52,13 +52,13 @@
 					"name": "effectiveDateDerivation"
 				},
 				{
-					"name": "AlterRow1"
-				},
-				{
 					"name": "filterNULLS"
 				},
 				{
 					"name": "derivedColumn1"
+				},
+				{
+					"name": "alterRow1"
 				}
 			],
 			"scriptLines": [
@@ -73,8 +73,8 @@
 				"source(output(",
 				"          CID as integer,",
 				"          name as string,",
-				"          original_mailId as string,",
 				"          current_mail_id as string,",
+				"          previous_mailId as string,",
 				"          effective_date as date",
 				"     ),",
 				"     allowSchemaDrift: true,",
@@ -83,7 +83,7 @@
 				"     format: 'table') ~> SCD3Table",
 				"SCD3Table select(mapColumn(",
 				"          CID,",
-				"          original_mailId,",
+				"          previous_mail_id = previous_mailId,",
 				"          current_mail_id,",
 				"          effective_date",
 				"     ),",
@@ -99,46 +99,24 @@
 				"          Email_ID,",
 				"          current_mail_id,",
 				"          effective_date,",
-				"          CID",
+				"          CID,",
+				"          previous_mailId",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> select2",
-				"select2 derive(effective_date = currentDate()) ~> effectiveDateDerivation",
-				"effectiveDateDerivation alterRow(updateIf(Email_ID != current_mail_id)) ~> AlterRow1",
+				"select2 derive(effective_date_derived = currentDate(),",
+				"          prev_id = previous_mailId) ~> effectiveDateDerivation",
 				"join1 filter(isNull(CID)) ~> filterNULLS",
-				"filterNULLS derive(effective_date = currentDate(),",
+				"filterNULLS derive(effective_date_derived = currentDate(),",
 				"          cur_email_id = Email_ID) ~> derivedColumn1",
-				"AlterRow1 sink(allowSchemaDrift: true,",
-				"     validateSchema: false,",
-				"     input(",
-				"          CID as integer,",
-				"          name as string,",
-				"          original_mailId as string,",
-				"          current_mail_id as string,",
-				"          effective_date as date",
-				"     ),",
-				"     deletable:false,",
-				"     insertable:false,",
-				"     updateable:true,",
-				"     upsertable:false,",
-				"     keys:['CID'],",
-				"     format: 'table',",
-				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true,",
-				"     saveOrder: 1,",
-				"     errorHandlingOption: 'stopOnFirstError',",
-				"     mapColumn(",
-				"          current_mail_id = Email_ID,",
-				"          effective_date,",
-				"          CID",
-				"     )) ~> UPDATE",
+				"effectiveDateDerivation alterRow(updateIf(Email_ID != current_mail_id)) ~> alterRow1",
 				"derivedColumn1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          CID as integer,",
 				"          name as string,",
-				"          original_mailId as string,",
 				"          current_mail_id as string,",
+				"          previous_mailId as string,",
 				"          effective_date as date",
 				"     ),",
 				"     deletable:false,",
@@ -153,10 +131,34 @@
 				"     mapColumn(",
 				"          CID = CustomerID,",
 				"          name = FirstName,",
-				"          original_mailId = Email_ID,",
-				"          current_mail_id = cur_email_id,",
-				"          effective_date",
-				"     )) ~> INSERT"
+				"          current_mail_id = Email_ID,",
+				"          effective_date = effective_date_derived",
+				"     )) ~> INSERT",
+				"alterRow1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          CID as integer,",
+				"          name as string,",
+				"          current_mail_id as string,",
+				"          previous_mailId as string,",
+				"          effective_date as date",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:true,",
+				"     upsertable:false,",
+				"     keys:['CID'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     saveOrder: 1,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          CID,",
+				"          current_mail_id = Email_ID,",
+				"          previous_mailId = current_mail_id,",
+				"          effective_date = effective_date_derived",
+				"     )) ~> UPDATE"
 			]
 		}
 	}

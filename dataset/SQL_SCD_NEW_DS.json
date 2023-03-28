@@ -1,0 +1,38 @@
+{
+	"name": "SQL_SCD_NEW_DS",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureSqlDatabase1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "CID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "name",
+				"type": "varchar"
+			},
+			{
+				"name": "current_mail_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "previous_mailId",
+				"type": "nvarchar"
+			},
+			{
+				"name": "effective_date",
+				"type": "date"
+			}
+		],
+		"typeProperties": {
+			"schema": "SalesLT",
+			"table": "scd3_asgn9"
+		}
+	}
+}
