@@ -13,6 +13,84 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/ProductCopyPipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy Product Data",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".CSV"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "SQL_GENERIC_DS",
+								"type": "DatasetReference",
+								"parameters": {
+									"schemaName": "saleslt",
+									"tableName": "Product"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ADLS_GENERIC_DS",
+								"type": "DatasetReference",
+								"parameters": {
+									"folderPath": {
+										"value": "Product/@{formatDateTime(utcNow(), 'yyyy')}/@{formatDateTime(utcNow(),'MM')}/@{formatDateTime(utcNow(), 'dd')}",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-03-14T15:50:32Z"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/childPipeline')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -1732,17 +1810,17 @@
 					"sinks": [
 						{
 							"dataset": {
-								"referenceName": "SCD_SQL_TABLE",
-								"type": "DatasetReference"
-							},
-							"name": "UPDATE"
-						},
-						{
-							"dataset": {
-								"referenceName": "SCD_SQL_TABLE",
+								"referenceName": "SQL_SCD_NEW_DS",
 								"type": "DatasetReference"
 							},
 							"name": "INSERT"
+						},
+						{
+							"dataset": {
+								"referenceName": "SQL_SCD_NEW_DS",
+								"type": "DatasetReference"
+							},
+							"name": "UPDATE"
 						}
 					],
 					"transformations": [
@@ -1762,13 +1840,13 @@
 							"name": "effectiveDateDerivation"
 						},
 						{
-							"name": "AlterRow1"
-						},
-						{
 							"name": "filterNULLS"
 						},
 						{
 							"name": "derivedColumn1"
+						},
+						{
+							"name": "alterRow1"
 						}
 					],
 					"scriptLines": [
@@ -1783,8 +1861,8 @@
 						"source(output(",
 						"          CID as integer,",
 						"          name as string,",
-						"          original_mailId as string,",
 						"          current_mail_id as string,",
+						"          previous_mailId as string,",
 						"          effective_date as date",
 						"     ),",
 						"     allowSchemaDrift: true,",
@@ -1793,7 +1871,7 @@
 						"     format: 'table') ~> SCD3Table",
 						"SCD3Table select(mapColumn(",
 						"          CID,",
-						"          original_mailId,",
+						"          previous_mail_id = previous_mailId,",
 						"          current_mail_id,",
 						"          effective_date",
 						"     ),",
@@ -1809,46 +1887,24 @@
 						"          Email_ID,",
 						"          current_mail_id,",
 						"          effective_date,",
-						"          CID",
+						"          CID,",
+						"          previous_mailId",
 						"     ),",
 						"     skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true) ~> select2",
-						"select2 derive(effective_date = currentDate()) ~> effectiveDateDerivation",
-						"effectiveDateDerivation alterRow(updateIf(Email_ID!=current_mail_id)) ~> AlterRow1",
+						"select2 derive(effective_date_derived = currentDate(),",
+						"          prev_id = previous_mailId) ~> effectiveDateDerivation",
 						"join1 filter(isNull(CID)) ~> filterNULLS",
-						"filterNULLS derive(effective_date = currentDate(),",
+						"filterNULLS derive(effective_date_derived = currentDate(),",
 						"          cur_email_id = Email_ID) ~> derivedColumn1",
-						"AlterRow1 sink(allowSchemaDrift: true,",
-						"     validateSchema: false,",
-						"     input(",
-						"          CID as integer,",
-						"          name as string,",
-						"          original_mailId as string,",
-						"          current_mail_id as string,",
-						"          effective_date as date",
-						"     ),",
-						"     deletable:false,",
-						"     insertable:false,",
-						"     updateable:true,",
-						"     upsertable:false,",
-						"     keys:['CID'],",
-						"     format: 'table',",
-						"     skipDuplicateMapInputs: true,",
-						"     skipDuplicateMapOutputs: true,",
-						"     saveOrder: 1,",
-						"     errorHandlingOption: 'stopOnFirstError',",
-						"     mapColumn(",
-						"          current_mail_id = Email_ID,",
-						"          effective_date,",
-						"          CID",
-						"     )) ~> UPDATE",
+						"effectiveDateDerivation alterRow(updateIf(Email_ID!=current_mail_id)) ~> alterRow1",
 						"derivedColumn1 sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     input(",
 						"          CID as integer,",
 						"          name as string,",
-						"          original_mailId as string,",
 						"          current_mail_id as string,",
+						"          previous_mailId as string,",
 						"          effective_date as date",
 						"     ),",
 						"     deletable:false,",
@@ -1863,10 +1919,34 @@
 						"     mapColumn(",
 						"          CID = CustomerID,",
 						"          name = FirstName,",
-						"          original_mailId = Email_ID,",
-						"          current_mail_id = cur_email_id,",
-						"          effective_date",
-						"     )) ~> INSERT"
+						"          current_mail_id = Email_ID,",
+						"          effective_date = effective_date_derived",
+						"     )) ~> INSERT",
+						"alterRow1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          CID as integer,",
+						"          name as string,",
+						"          current_mail_id as string,",
+						"          previous_mailId as string,",
+						"          effective_date as date",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:false,",
+						"     updateable:true,",
+						"     upsertable:false,",
+						"     keys:['CID'],",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     saveOrder: 1,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          CID,",
+						"          current_mail_id = Email_ID,",
+						"          previous_mailId = current_mail_id,",
+						"          effective_date = effective_date_derived",
+						"     )) ~> UPDATE"
 					]
 				}
 			},
@@ -2420,154 +2500,6 @@
 				"lastPublishTime": "2023-03-14T13:21:29Z"
 			},
 			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/LookupExampleWithChildPipeline')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "get the record count of customer table",
-						"type": "Lookup",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "AzureSqlSource",
-								"sqlReaderQuery": "select count(*) as totalCount \nfrom saleslt.Customer",
-								"queryTimeout": "02:00:00",
-								"partitionOption": "None"
-							},
-							"dataset": {
-								"referenceName": "AzureSqlTable1",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						}
-					},
-					{
-						"name": "condition to check customer more than 500",
-						"type": "IfCondition",
-						"dependsOn": [
-							{
-								"activity": "get the record count of customer table",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"userProperties": [],
-						"typeProperties": {
-							"expression": {
-								"value": "@greater(activity('get the record count of customer table').output.firstRow.totalCount,500)",
-								"type": "Expression"
-							},
-							"ifTrueActivities": [
-								{
-									"name": "Copy Customer data",
-									"type": "Copy",
-									"dependsOn": [],
-									"policy": {
-										"timeout": "0.12:00:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"source": {
-											"type": "AzureSqlSource",
-											"queryTimeout": "02:00:00",
-											"partitionOption": "None"
-										},
-										"sink": {
-											"type": "DelimitedTextSink",
-											"storeSettings": {
-												"type": "AzureBlobFSWriteSettings"
-											},
-											"formatSettings": {
-												"type": "DelimitedTextWriteSettings",
-												"quoteAllText": true,
-												"fileExtension": ".txt"
-											}
-										},
-										"enableStaging": false,
-										"translator": {
-											"type": "TabularTranslator",
-											"typeConversion": true,
-											"typeConversionSettings": {
-												"allowDataTruncation": true,
-												"treatBooleanAsNumber": false
-											}
-										}
-									},
-									"inputs": [
-										{
-											"referenceName": "SQL_GENERIC_DS",
-											"type": "DatasetReference",
-											"parameters": {
-												"schemaName": "saleslt",
-												"tableName": "Customer"
-											}
-										}
-									],
-									"outputs": [
-										{
-											"referenceName": "ADLS_GENERIC_DS",
-											"type": "DatasetReference",
-											"parameters": {
-												"folderPath": {
-													"value": "@{formatDateTime(utcnow(), 'yyyy')}/@{formatDateTime(utcnow(), 'MM')}/@{formatDateTime(utcnow(), 'dd')}",
-													"type": "Expression"
-												}
-											}
-										}
-									]
-								},
-								{
-									"name": "Pipeline to check Product Table count and execute",
-									"type": "ExecutePipeline",
-									"dependsOn": [
-										{
-											"activity": "Copy Customer data",
-											"dependencyConditions": [
-												"Succeeded"
-											]
-										}
-									],
-									"userProperties": [],
-									"typeProperties": {
-										"pipeline": {
-											"referenceName": "childPipeline",
-											"type": "PipelineReference"
-										},
-										"waitOnCompletion": true,
-										"parameters": {}
-									}
-								}
-							]
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
-				},
-				"annotations": [],
-				"lastPublishTime": "2023-03-14T11:30:06Z"
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/childPipeline')]"
-			]
 		}
 	]
 }

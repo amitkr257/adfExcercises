@@ -251,6 +251,47 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/SQL_SCD_NEW_DS')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "name",
+						"type": "varchar"
+					},
+					{
+						"name": "current_mail_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "previous_mailId",
+						"type": "nvarchar"
+					},
+					{
+						"name": "effective_date",
+						"type": "date"
+					}
+				],
+				"typeProperties": {
+					"schema": "SalesLT",
+					"table": "scd3_asgn9"
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/highwatermark')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -1467,86 +1508,6 @@
 				},
 				"annotations": [],
 				"lastPublishTime": "2023-03-18T05:35:20Z"
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/SQL_GENERIC_DS')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/ProductCopyPipeline')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "Copy Product Data",
-						"type": "Copy",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "AzureSqlSource",
-								"queryTimeout": "02:00:00",
-								"partitionOption": "None"
-							},
-							"sink": {
-								"type": "DelimitedTextSink",
-								"storeSettings": {
-									"type": "AzureBlobFSWriteSettings"
-								},
-								"formatSettings": {
-									"type": "DelimitedTextWriteSettings",
-									"quoteAllText": true,
-									"fileExtension": ".CSV"
-								}
-							},
-							"enableStaging": false,
-							"translator": {
-								"type": "TabularTranslator",
-								"typeConversion": true,
-								"typeConversionSettings": {
-									"allowDataTruncation": true,
-									"treatBooleanAsNumber": false
-								}
-							}
-						},
-						"inputs": [
-							{
-								"referenceName": "SQL_GENERIC_DS",
-								"type": "DatasetReference",
-								"parameters": {
-									"schemaName": "saleslt",
-									"tableName": "Product"
-								}
-							}
-						],
-						"outputs": [
-							{
-								"referenceName": "ADLS_GENERIC_DS",
-								"type": "DatasetReference",
-								"parameters": {
-									"folderPath": {
-										"value": "Product/@{formatDateTime(utcNow(), 'yyyy')}/@{formatDateTime(utcNow(),'MM')}/@{formatDateTime(utcNow(), 'dd')}",
-										"type": "Expression"
-									}
-								}
-							}
-						]
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
-				},
-				"annotations": [],
-				"lastPublishTime": "2023-03-14T15:50:32Z"
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/SQL_GENERIC_DS')]"

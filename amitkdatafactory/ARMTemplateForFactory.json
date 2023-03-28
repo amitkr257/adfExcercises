@@ -1943,8 +1943,8 @@
 								"datasetParameters": {
 									"SCD3INP": {},
 									"SCD3Table": {},
-									"UPDATE": {},
-									"INSERT": {}
+									"INSERT": {},
+									"UPDATE": {}
 								}
 							},
 							"staging": {},
@@ -4555,6 +4555,49 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/SQL_SCD_NEW_DS')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "name",
+						"type": "varchar"
+					},
+					{
+						"name": "current_mail_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "previous_mailId",
+						"type": "nvarchar"
+					},
+					{
+						"name": "effective_date",
+						"type": "date"
+					}
+				],
+				"typeProperties": {
+					"schema": "SalesLT",
+					"table": "scd3_asgn9"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/highwatermark')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -5097,17 +5140,17 @@
 					"sinks": [
 						{
 							"dataset": {
-								"referenceName": "SCD_SQL_TABLE",
-								"type": "DatasetReference"
-							},
-							"name": "UPDATE"
-						},
-						{
-							"dataset": {
-								"referenceName": "SCD_SQL_TABLE",
+								"referenceName": "SQL_SCD_NEW_DS",
 								"type": "DatasetReference"
 							},
 							"name": "INSERT"
+						},
+						{
+							"dataset": {
+								"referenceName": "SQL_SCD_NEW_DS",
+								"type": "DatasetReference"
+							},
+							"name": "UPDATE"
 						}
 					],
 					"transformations": [
@@ -5127,13 +5170,13 @@
 							"name": "effectiveDateDerivation"
 						},
 						{
-							"name": "AlterRow1"
-						},
-						{
 							"name": "filterNULLS"
 						},
 						{
 							"name": "derivedColumn1"
+						},
+						{
+							"name": "alterRow1"
 						}
 					],
 					"scriptLines": [
@@ -5148,8 +5191,8 @@
 						"source(output(",
 						"          CID as integer,",
 						"          name as string,",
-						"          original_mailId as string,",
 						"          current_mail_id as string,",
+						"          previous_mailId as string,",
 						"          effective_date as date",
 						"     ),",
 						"     allowSchemaDrift: true,",
@@ -5158,7 +5201,7 @@
 						"     format: 'table') ~> SCD3Table",
 						"SCD3Table select(mapColumn(",
 						"          CID,",
-						"          original_mailId,",
+						"          previous_mail_id = previous_mailId,",
 						"          current_mail_id,",
 						"          effective_date",
 						"     ),",
@@ -5174,46 +5217,24 @@
 						"          Email_ID,",
 						"          current_mail_id,",
 						"          effective_date,",
-						"          CID",
+						"          CID,",
+						"          previous_mailId",
 						"     ),",
 						"     skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true) ~> select2",
-						"select2 derive(effective_date = currentDate()) ~> effectiveDateDerivation",
-						"effectiveDateDerivation alterRow(updateIf(Email_ID!=current_mail_id)) ~> AlterRow1",
+						"select2 derive(effective_date_derived = currentDate(),",
+						"          prev_id = previous_mailId) ~> effectiveDateDerivation",
 						"join1 filter(isNull(CID)) ~> filterNULLS",
-						"filterNULLS derive(effective_date = currentDate(),",
+						"filterNULLS derive(effective_date_derived = currentDate(),",
 						"          cur_email_id = Email_ID) ~> derivedColumn1",
-						"AlterRow1 sink(allowSchemaDrift: true,",
-						"     validateSchema: false,",
-						"     input(",
-						"          CID as integer,",
-						"          name as string,",
-						"          original_mailId as string,",
-						"          current_mail_id as string,",
-						"          effective_date as date",
-						"     ),",
-						"     deletable:false,",
-						"     insertable:false,",
-						"     updateable:true,",
-						"     upsertable:false,",
-						"     keys:['CID'],",
-						"     format: 'table',",
-						"     skipDuplicateMapInputs: true,",
-						"     skipDuplicateMapOutputs: true,",
-						"     saveOrder: 1,",
-						"     errorHandlingOption: 'stopOnFirstError',",
-						"     mapColumn(",
-						"          current_mail_id = Email_ID,",
-						"          effective_date,",
-						"          CID",
-						"     )) ~> UPDATE",
+						"effectiveDateDerivation alterRow(updateIf(Email_ID!=current_mail_id)) ~> alterRow1",
 						"derivedColumn1 sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     input(",
 						"          CID as integer,",
 						"          name as string,",
-						"          original_mailId as string,",
 						"          current_mail_id as string,",
+						"          previous_mailId as string,",
 						"          effective_date as date",
 						"     ),",
 						"     deletable:false,",
@@ -5228,16 +5249,41 @@
 						"     mapColumn(",
 						"          CID = CustomerID,",
 						"          name = FirstName,",
-						"          original_mailId = Email_ID,",
-						"          current_mail_id = cur_email_id,",
-						"          effective_date",
-						"     )) ~> INSERT"
+						"          current_mail_id = Email_ID,",
+						"          effective_date = effective_date_derived",
+						"     )) ~> INSERT",
+						"alterRow1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          CID as integer,",
+						"          name as string,",
+						"          current_mail_id as string,",
+						"          previous_mailId as string,",
+						"          effective_date as date",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:false,",
+						"     updateable:true,",
+						"     upsertable:false,",
+						"     keys:['CID'],",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     saveOrder: 1,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          CID,",
+						"          current_mail_id = Email_ID,",
+						"          previous_mailId = current_mail_id,",
+						"          effective_date = effective_date_derived",
+						"     )) ~> UPDATE"
 					]
 				}
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/SCD_3_DS')]",
-				"[concat(variables('factoryId'), '/datasets/SCD_SQL_TABLE')]"
+				"[concat(variables('factoryId'), '/datasets/SCD_SQL_TABLE')]",
+				"[concat(variables('factoryId'), '/datasets/SQL_SCD_NEW_DS')]"
 			]
 		},
 		{
