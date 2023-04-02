@@ -16,6 +16,9 @@
 		},
 		"AzureDataLakeStorage1_properties_typeProperties_url": {
 			"value": "https://amitkumar010791.dfs.core.windows.net/"
+		},
+		"RestService_LS_properties_typeProperties_url": {
+			"value": "https://restcountries.com/v3.1/"
 		}
 	}
 }

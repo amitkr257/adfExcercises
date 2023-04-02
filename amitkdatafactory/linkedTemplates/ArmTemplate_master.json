@@ -23,6 +23,10 @@
 			"type": "string",
 			"defaultValue": "https://amitkumar010791.dfs.core.windows.net/"
 		},
+		"RestService_LS_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://restcountries.com/v3.1/"
+		},
 		"containerUri": {
 			"type": "string",
 			"metadata": "URI to storage account containing linked ARM templates"
@@ -61,6 +65,9 @@
 					},
 					"AzureDataLakeStorage1_properties_typeProperties_url": {
 						"value": "[parameters('AzureDataLakeStorage1_properties_typeProperties_url')]"
+					},
+					"RestService_LS_properties_typeProperties_url": {
+						"value": "[parameters('RestService_LS_properties_typeProperties_url')]"
 					}
 				}
 			},
