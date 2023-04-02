@@ -1,0 +1,101 @@
+{
+	"name": "RestExample",
+	"properties": {
+		"activities": [
+			{
+				"name": "Rest Data Copy",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "RestSource",
+						"httpRequestTimeout": "00:01:40",
+						"requestInterval": "00.00:00:00.010",
+						"requestMethod": "GET",
+						"paginationRules": {
+							"supportRFC5988": "true"
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "RestResource_DS",
+						"type": "DatasetReference",
+						"parameters": {
+							"path": "all"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ADLS_GENERIC_PATH_NAME_DS",
+						"type": "DatasetReference",
+						"parameters": {
+							"folderPath": "RestOutput",
+							"fileName": "api.txt"
+						}
+					}
+				]
+			},
+			{
+				"name": "send mail",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Rest Data Copy",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": "https://prod-20.eastus.logic.azure.com:443/workflows/dfc2d27619354a2fb95b38f83dcf7f6f/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=GmHZmBQC5BHKp_YSKI59HE86mAevcsjte_qer2mAu9Y",
+					"method": "POST",
+					"body": {
+						"DL": "amituniv.257@gmail.com, amitsearchjob.257@gmail.com",
+						"pipelineName": "@pipeline().Pipeline",
+						"status": "True"
+					}
+				}
+			}
+		],
+		"variables": {
+			"emailIDs": {
+				"type": "Array",
+				"defaultValue": [
+					"amitsearchjob.257@gmail.com",
+					"amituniv.257@gmail.com"
+				]
+			}
+		},
+		"annotations": []
+	}
+}
