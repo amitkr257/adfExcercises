@@ -1,0 +1,24 @@
+{
+	"name": "filebasedtrigger",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "asgn10Q6TriggeredPipeline",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/landing/blobs/RestJsonData/india.json",
+			"ignoreEmptyBlobs": true,
+			"scope": "/subscriptions/6585c2ff-c7bd-4442-b68d-58f3de122956/resourceGroups/Azurelib-Academy/providers/Microsoft.Storage/storageAccounts/amitkumar010791",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}

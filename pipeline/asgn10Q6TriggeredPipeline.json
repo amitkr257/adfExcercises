@@ -1,0 +1,66 @@
+{
+	"name": "asgn10Q6TriggeredPipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy Json as CSV",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "JSON_GENERIC_PATH_FILENAME",
+						"type": "DatasetReference",
+						"parameters": {
+							"folderPath": "RestJsonData",
+							"fileName": "india.json"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ADLS_GENERIC_PATH_NAME_DS",
+						"type": "DatasetReference",
+						"parameters": {
+							"folderPath": "IndiaCSV",
+							"fileName": "india.csv"
+						}
+					}
+				]
+			}
+		],
+		"annotations": []
+	}
+}
