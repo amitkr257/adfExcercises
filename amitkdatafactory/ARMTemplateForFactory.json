@@ -6155,6 +6155,36 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/asgn10Q6TriggeredPipeline')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/scheduleTrigger')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "Asgn10Q2345",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Hour",
+						"interval": 12,
+						"startTime": "2023-04-11T12:00:00",
+						"timeZone": "India Standard Time"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/Asgn10Q2345')]"
+			]
 		}
 	]
 }
