@@ -27,7 +27,7 @@
 			"type": "string",
 			"defaultValue": "https://restcountries.com/v3.1/"
 		},
-		"filebasedtrigger_properties_typeProperties_scope": {
+		"filebasedEvent_properties_typeProperties_scope": {
 			"type": "string",
 			"defaultValue": "/subscriptions/6585c2ff-c7bd-4442-b68d-58f3de122956/resourceGroups/Azurelib-Academy/providers/Microsoft.Storage/storageAccounts/amitkumar010791"
 		}
@@ -5189,36 +5189,6 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/filebasedtrigger')]",
-			"type": "Microsoft.DataFactory/factories/triggers",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"runtimeState": "Stopped",
-				"pipelines": [
-					{
-						"pipelineReference": {
-							"referenceName": "asgn10Q6TriggeredPipeline",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
-					}
-				],
-				"type": "BlobEventsTrigger",
-				"typeProperties": {
-					"blobPathBeginsWith": "/landing/blobs/RestJsonData/india.json",
-					"ignoreEmptyBlobs": true,
-					"scope": "[parameters('filebasedtrigger_properties_typeProperties_scope')]",
-					"events": [
-						"Microsoft.Storage.BlobCreated"
-					]
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/asgn10Q6TriggeredPipeline')]"
-			]
-		},
-		{
 			"name": "[concat(parameters('factoryName'), '/Asgn8Q1')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
@@ -6154,6 +6124,36 @@
 				"[concat(variables('factoryId'), '/datasets/PRODUCT_DS_DATAFLOW')]",
 				"[concat(variables('factoryId'), '/datasets/ADLS_GENERIC_DS')]",
 				"[concat(variables('factoryId'), '/linkedServices/AzureDataLakeStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/filebasedEvent')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "asgn10Q6TriggeredPipeline",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/landing/blobs/RestJsonData/india.json",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('filebasedEvent_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/asgn10Q6TriggeredPipeline')]"
 			]
 		}
 	]

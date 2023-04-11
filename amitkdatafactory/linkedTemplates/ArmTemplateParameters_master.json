@@ -20,7 +20,7 @@
 		"RestService_LS_properties_typeProperties_url": {
 			"value": "https://restcountries.com/v3.1/"
 		},
-		"filebasedtrigger_properties_typeProperties_scope": {
+		"filebasedEvent_properties_typeProperties_scope": {
 			"value": "/subscriptions/6585c2ff-c7bd-4442-b68d-58f3de122956/resourceGroups/Azurelib-Academy/providers/Microsoft.Storage/storageAccounts/amitkumar010791"
 		},
 		"containerUri": {
