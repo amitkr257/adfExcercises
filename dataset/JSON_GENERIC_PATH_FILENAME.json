@@ -1,0 +1,83 @@
+{
+	"name": "JSON_GENERIC_PATH_FILENAME",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureDataLakeStorage1",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"folderPath": {
+				"type": "string"
+			},
+			"fileName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().folderPath",
+					"type": "Expression"
+				},
+				"fileSystem": "landing"
+			}
+		},
+		"schema": {
+			"type": "object",
+			"properties": {
+				"Prop_0": {
+					"type": "string"
+				},
+				"Prop_1": {
+					"type": "string"
+				},
+				"Prop_2": {
+					"type": "string"
+				},
+				"Prop_3": {
+					"type": "string"
+				},
+				"Prop_4": {
+					"type": "string"
+				},
+				"Prop_5": {
+					"type": "string"
+				},
+				"Prop_6": {
+					"type": "string"
+				},
+				"Prop_7": {
+					"type": "string"
+				},
+				"Prop_8": {
+					"type": "string"
+				},
+				"Prop_9": {
+					"type": "string"
+				},
+				"Prop_10": {
+					"type": "string"
+				},
+				"Prop_11": {
+					"type": "string"
+				},
+				"Prop_12": {
+					"type": "string"
+				},
+				"Prop_13": {
+					"type": "string"
+				},
+				"Prop_14": {
+					"type": "string"
+				}
+			}
+		}
+	}
+}
