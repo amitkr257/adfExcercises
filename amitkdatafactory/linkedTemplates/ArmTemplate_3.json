@@ -17,6 +17,174 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/Asgn9Q2')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "SCD_3_DS",
+								"type": "DatasetReference"
+							},
+							"name": "SCD3INP"
+						},
+						{
+							"dataset": {
+								"referenceName": "SCD_SQL_TABLE",
+								"type": "DatasetReference"
+							},
+							"name": "SCD3Table"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "SQL_SCD_NEW_DS",
+								"type": "DatasetReference"
+							},
+							"name": "INSERT"
+						},
+						{
+							"dataset": {
+								"referenceName": "SQL_SCD_NEW_DS",
+								"type": "DatasetReference"
+							},
+							"name": "UPDATE"
+						}
+					],
+					"transformations": [
+						{
+							"name": "select1"
+						},
+						{
+							"name": "join1"
+						},
+						{
+							"name": "filterNonNulls"
+						},
+						{
+							"name": "select2"
+						},
+						{
+							"name": "effectiveDateDerivation"
+						},
+						{
+							"name": "filterNULLS"
+						},
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "alterRow1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          CustomerID as integer,",
+						"          FirstName as string,",
+						"          Email_ID as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> SCD3INP",
+						"source(output(",
+						"          CID as integer,",
+						"          name as string,",
+						"          current_mail_id as string,",
+						"          previous_mailId as string,",
+						"          effective_date as date",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> SCD3Table",
+						"SCD3Table select(mapColumn(",
+						"          CID,",
+						"          previous_mail_id = previous_mailId,",
+						"          current_mail_id,",
+						"          effective_date",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"SCD3INP, SCD3Table join(CustomerID == CID,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join1",
+						"join1 filter(!isNull(CID)) ~> filterNonNulls",
+						"filterNonNulls select(mapColumn(",
+						"          Email_ID,",
+						"          current_mail_id,",
+						"          effective_date,",
+						"          CID,",
+						"          previous_mailId",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"select2 derive(effective_date_derived = currentDate(),",
+						"          prev_id = previous_mailId) ~> effectiveDateDerivation",
+						"join1 filter(isNull(CID)) ~> filterNULLS",
+						"filterNULLS derive(effective_date_derived = currentDate(),",
+						"          cur_email_id = Email_ID) ~> derivedColumn1",
+						"effectiveDateDerivation alterRow(updateIf(Email_ID!=current_mail_id)) ~> alterRow1",
+						"derivedColumn1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          CID as integer,",
+						"          name as string,",
+						"          current_mail_id as string,",
+						"          previous_mailId as string,",
+						"          effective_date as date",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     saveOrder: 2,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          CID = CustomerID,",
+						"          name = FirstName,",
+						"          current_mail_id = Email_ID,",
+						"          effective_date = effective_date_derived",
+						"     )) ~> INSERT",
+						"alterRow1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          CID as integer,",
+						"          name as string,",
+						"          current_mail_id as string,",
+						"          previous_mailId as string,",
+						"          effective_date as date",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:false,",
+						"     updateable:true,",
+						"     upsertable:false,",
+						"     keys:['CID'],",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     saveOrder: 1,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          CID,",
+						"          current_mail_id = Email_ID,",
+						"          previous_mailId = current_mail_id,",
+						"          effective_date = effective_date_derived",
+						"     )) ~> UPDATE"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/Asgn9Q3')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
@@ -1072,7 +1240,9 @@
 				},
 				"annotations": []
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/Asgn9Q2')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/asgn9Q3')]",
@@ -1145,34 +1315,6 @@
 					"events": [
 						"Microsoft.Storage.BlobCreated"
 					]
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/scheduleTrigger')]",
-			"type": "Microsoft.DataFactory/factories/triggers",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"runtimeState": "Started",
-				"pipelines": [
-					{
-						"pipelineReference": {
-							"referenceName": "Asgn10Q2345",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
-					}
-				],
-				"type": "ScheduleTrigger",
-				"typeProperties": {
-					"recurrence": {
-						"frequency": "Hour",
-						"interval": 12,
-						"startTime": "2023-04-11T12:00:00",
-						"timeZone": "India Standard Time"
-					}
 				}
 			},
 			"dependsOn": []
