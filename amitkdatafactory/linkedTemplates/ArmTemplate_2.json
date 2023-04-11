@@ -685,6 +685,79 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/asgn10Q6TriggeredPipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy Json as CSV",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "JSON_GENERIC_PATH_FILENAME",
+								"type": "DatasetReference",
+								"parameters": {
+									"folderPath": "RestJsonData",
+									"fileName": "india.json"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ADLS_GENERIC_PATH_NAME_DS",
+								"type": "DatasetReference",
+								"parameters": {
+									"folderPath": "IndiaCSV",
+									"fileName": "india.csv"
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/childPipeline')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -2541,86 +2614,6 @@
 						"          previous_mailId = current_mail_id,",
 						"          effective_date = effective_date_derived",
 						"     )) ~> UPDATE"
-					]
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/Asgn9Q3')]",
-			"type": "Microsoft.DataFactory/factories/dataflows",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"type": "MappingDataFlow",
-				"typeProperties": {
-					"sources": [
-						{
-							"dataset": {
-								"referenceName": "DUPLICATE_DS",
-								"type": "DatasetReference"
-							},
-							"name": "DuplicateSource"
-						}
-					],
-					"sinks": [
-						{
-							"dataset": {
-								"referenceName": "ASGN9_Q3",
-								"type": "DatasetReference"
-							},
-							"name": "sink1"
-						}
-					],
-					"transformations": [
-						{
-							"name": "window1"
-						},
-						{
-							"name": "filter1"
-						}
-					],
-					"scriptLines": [
-						"source(output(",
-						"          ID as short,",
-						"          Name as string",
-						"     ),",
-						"     allowSchemaDrift: true,",
-						"     validateSchema: false,",
-						"     ignoreNoFilesFound: false) ~> DuplicateSource",
-						"DuplicateSource window(over(ID),",
-						"     asc(Name, true),",
-						"     rn = rowNumber()) ~> window1",
-						"window1 filter(rn==1) ~> filter1",
-						"filter1 sink(allowSchemaDrift: true,",
-						"     validateSchema: false,",
-						"     input(",
-						"          Prop_0 as string,",
-						"          Prop_1 as string,",
-						"          Prop_2 as string,",
-						"          Prop_3 as string,",
-						"          Prop_4 as string,",
-						"          Prop_5 as string,",
-						"          Prop_6 as string,",
-						"          Prop_7 as string,",
-						"          Prop_8 as string,",
-						"          Prop_9 as string,",
-						"          Prop_10 as string,",
-						"          Prop_11 as string,",
-						"          Prop_12 as string,",
-						"          Prop_13 as string,",
-						"          Prop_14 as string",
-						"     ),",
-						"     partitionFileNames:['asgn9_q3.json'],",
-						"     umask: 0022,",
-						"     preCommands: [],",
-						"     postCommands: [],",
-						"     skipDuplicateMapInputs: true,",
-						"     skipDuplicateMapOutputs: true,",
-						"     mapColumn(",
-						"          ID,",
-						"          Name",
-						"     ),",
-						"     partitionBy('hash', 1)) ~> sink1"
 					]
 				}
 			},
