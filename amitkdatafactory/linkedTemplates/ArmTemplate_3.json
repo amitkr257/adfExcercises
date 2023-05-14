@@ -17,6 +17,374 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/Asgn8Q1')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "CUSTOMER_DS_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "adlssource"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "EVEN_CUST_SQL",
+								"type": "DatasetReference"
+							},
+							"name": "copyData",
+							"rejectedDataLinkedService": {
+								"referenceName": "AzureDataLakeStorage1",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"transformations": [
+						{
+							"name": "evenCustomers"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          CustomerID as integer,",
+						"          NameStyle as boolean,",
+						"          Title as string,",
+						"          FirstName as string,",
+						"          MiddleName as string,",
+						"          LastName as string,",
+						"          Suffix as string,",
+						"          CompanyName as string,",
+						"          SalesPerson as string,",
+						"          EmailAddress as string,",
+						"          Phone as string,",
+						"          PasswordHash as string,",
+						"          PasswordSalt as string,",
+						"          rowguid as string,",
+						"          ModifiedDate as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> adlssource",
+						"adlssource filter(CustomerID%2==0) ~> evenCustomers",
+						"evenCustomers sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          CustomerID as integer,",
+						"          NameStyle as boolean,",
+						"          Title as string,",
+						"          FirstName as string,",
+						"          MiddleName as string,",
+						"          LastName as string,",
+						"          Suffix as string,",
+						"          CompanyName as string,",
+						"          SalesPerson as string,",
+						"          EmailAddress as string,",
+						"          Phone as string,",
+						"          PasswordHash as string,",
+						"          PasswordSalt as string,",
+						"          rowguid as string,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['truncate table saleslt.even_cust','SET IDENTITY_INSERT saleslt.even_cust ON'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          CustomerID,",
+						"          NameStyle,",
+						"          Title,",
+						"          FirstName,",
+						"          MiddleName,",
+						"          LastName,",
+						"          Suffix,",
+						"          CompanyName,",
+						"          SalesPerson,",
+						"          EmailAddress,",
+						"          Phone,",
+						"          PasswordHash,",
+						"          PasswordSalt,",
+						"          rowguid,",
+						"          ModifiedDate",
+						"     )) ~> copyData"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Asgn8Q2')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "CUSTOMER_DS_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "custSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "CUSTOMER_ADD_DS_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "custAddSource"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "JSON_GENERIC_DS",
+								"type": "DatasetReference"
+							},
+							"name": "dumpasJson",
+							"rejectedDataLinkedService": {
+								"referenceName": "AzureDataLakeStorage1",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"transformations": [
+						{
+							"name": "joinCustAdd"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          CustomerID as short,",
+						"          NameStyle as boolean,",
+						"          Title as string,",
+						"          FirstName as string,",
+						"          MiddleName as string,",
+						"          LastName as string,",
+						"          Suffix as string,",
+						"          CompanyName as string,",
+						"          SalesPerson as string,",
+						"          EmailAddress as string,",
+						"          Phone as string,",
+						"          PasswordHash as string,",
+						"          PasswordSalt as string,",
+						"          rowguid as string,",
+						"          ModifiedDate as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> custSource",
+						"source(output(",
+						"          CustomerID as short,",
+						"          AddressID as short,",
+						"          AddressType as string,",
+						"          rowguid as string,",
+						"          ModifiedDate as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> custAddSource",
+						"custSource, custAddSource join(custSource@CustomerID == custAddSource@CustomerID,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> joinCustAdd",
+						"joinCustAdd sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     mapColumn(",
+						"          CustomerID = custSource@CustomerID,",
+						"          NameStyle,",
+						"          Title,",
+						"          FirstName,",
+						"          MiddleName,",
+						"          LastName,",
+						"          Suffix,",
+						"          CompanyName,",
+						"          SalesPerson,",
+						"          EmailAddress,",
+						"          Phone,",
+						"          PasswordHash,",
+						"          PasswordSalt,",
+						"          rowguid = custSource@rowguid,",
+						"          ModifiedDate = custSource@ModifiedDate,",
+						"          CustomerID = custAddSource@CustomerID,",
+						"          AddressID,",
+						"          AddressType,",
+						"          rowguid = custAddSource@rowguid,",
+						"          ModifiedDate = custAddSource@ModifiedDate",
+						"     )) ~> dumpasJson"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Asgn9Q1')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "CUSTOMER_DS_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "custCSV"
+						},
+						{
+							"dataset": {
+								"referenceName": "ASGN9_SQL_DS",
+								"type": "DatasetReference"
+							},
+							"name": "sampleCust"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ASGN9_SQL_DS",
+								"type": "DatasetReference"
+							},
+							"name": "updateDB"
+						},
+						{
+							"dataset": {
+								"referenceName": "ASGN9_SQL_DS",
+								"type": "DatasetReference"
+							},
+							"name": "InsertDB"
+						}
+					],
+					"transformations": [
+						{
+							"name": "oddCust"
+						},
+						{
+							"name": "joinDBndCSV"
+						},
+						{
+							"name": "select1"
+						},
+						{
+							"name": "select2"
+						},
+						{
+							"name": "filterNonNULLS"
+						},
+						{
+							"name": "AlterRow1"
+						},
+						{
+							"name": "filterNullOnly"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          CustomerID as integer,",
+						"          NameStyle as boolean,",
+						"          Title as string,",
+						"          FirstName as string,",
+						"          MiddleName as string,",
+						"          LastName as string,",
+						"          Suffix as string,",
+						"          CompanyName as string,",
+						"          SalesPerson as string,",
+						"          EmailAddress as string,",
+						"          Phone as string,",
+						"          PasswordHash as string,",
+						"          PasswordSalt as string,",
+						"          rowguid as string,",
+						"          ModifiedDate as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> custCSV",
+						"source(output(",
+						"          CID as integer,",
+						"          name as string,",
+						"          mailId as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> sampleCust",
+						"custCSV filter(CustomerID %2 != 0) ~> oddCust",
+						"select1, select2 join(CustomerID == CID,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> joinDBndCSV",
+						"oddCust select(mapColumn(",
+						"          CustomerID,",
+						"          FirstName,",
+						"          EmailAddress",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"sampleCust select(mapColumn(",
+						"          CID",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"joinDBndCSV filter(!isNull(CID)) ~> filterNonNULLS",
+						"filterNonNULLS alterRow(updateIf(CustomerID==CID)) ~> AlterRow1",
+						"joinDBndCSV filter(isNull(CID)) ~> filterNullOnly",
+						"AlterRow1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:false,",
+						"     updateable:true,",
+						"     upsertable:false,",
+						"     keys:['CID'],",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     saveOrder: 1,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          CID,",
+						"          name = FirstName,",
+						"          mailId = EmailAddress",
+						"     )) ~> updateDB",
+						"filterNullOnly sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     saveOrder: 2,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          CID = CustomerID,",
+						"          name = FirstName,",
+						"          mailId = EmailAddress",
+						"     )) ~> InsertDB"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/Asgn9Q2')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
@@ -599,7 +967,9 @@
 				},
 				"annotations": []
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/Asgn9Q1')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/Ingestion_Product_To_JSON')]",
@@ -993,7 +1363,9 @@
 				"annotations": [],
 				"lastPublishTime": "2023-03-25T09:45:52Z"
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/Asgn8Q1')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/asgn8Q2')]",
@@ -1042,7 +1414,9 @@
 				"annotations": [],
 				"lastPublishTime": "2023-03-25T10:10:08Z"
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/Asgn8Q2')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/asgn8Q3')]",
