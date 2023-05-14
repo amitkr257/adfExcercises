@@ -1,0 +1,279 @@
+{
+	"name": "ingestionBranch",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy Branch",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "live_LS",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "dbo",
+							"tablename": "Branch"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "Parquet1",
+						"type": "DatasetReference",
+						"parameters": {
+							"folderName": "Branch",
+							"filename": "branch.parquet"
+						}
+					}
+				]
+			},
+			{
+				"name": "LookupHW",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Copy Branch",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select lastmodifieddate as lastmodifieddate from dbo.HighWaterMark where name = 'Agent'",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "live_LS",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "dbo",
+							"tablename": "HighWaterMark"
+						}
+					}
+				}
+			},
+			{
+				"name": "Lookup Agent Max TS",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "LookupHW",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select MAX(create_timestamp) as create_timestamp from dbo.Agent ",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "live_LS",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "dbo",
+							"tablename": "Agent"
+						}
+					}
+				}
+			},
+			{
+				"name": "Copy Agent Incremental",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Lookup Agent Max TS",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "select * from dbo.Agent where create_timestamp > '@{activity('LookupHW').output.firstRow.lastmodifieddate}' and create_timestamp <= '@{activity('Lookup Agent Max TS').output.firstRow.create_timestamp}'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "live_LS",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "dbo",
+							"tablename": "Agent"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "Parquet1",
+						"type": "DatasetReference",
+						"parameters": {
+							"folderName": "Agent",
+							"filename": "agent.parquet"
+						}
+					}
+				]
+			},
+			{
+				"name": "Update HW Table",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Copy Agent Incremental",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "select 'Agent' as name, '@{activity('Lookup Agent Max TS').output.firstRow.create_timestamp}' as lastmodifieddate",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "upsert",
+						"upsertSettings": {
+							"useTempDB": true,
+							"keys": [
+								"name"
+							]
+						},
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "live_LS",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "dbo",
+							"tablename": "Agent"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "live_LS",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "dbo",
+							"tablename": "HighWaterMark"
+						}
+					}
+				]
+			}
+		],
+		"annotations": []
+	}
+}

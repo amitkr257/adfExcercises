@@ -1,0 +1,38 @@
+{
+	"name": "live_LS",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "SQL_TABLE_DS",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"schema": {
+				"type": "string"
+			},
+			"tablename": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "branch_id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "branch_country",
+				"type": "varchar"
+			},
+			{
+				"name": "branch_city",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "HighWaterMark"
+		}
+	}
+}
