@@ -2206,7 +2206,7 @@
 							"source": {
 								"type": "AzureSqlSource",
 								"sqlReaderQuery": {
-									"value": "select * from dbo.Agent where create_timestamp > '@{activity('LookupHW').output.firstRow.lastmodifieddate}' and create_timestamp <= '@{activity('Lookup Claim Max TS').output.firstRow.create_timestamp}'",
+									"value": "select * from dbo.Claim where LastUpdatedTimeStamp > '@{activity('LookupHW').output.firstRow.lastmodifieddate}' and LastUpdatedTimeStamp <= '@{activity('Lookup Claim Max TS').output.firstRow.create_timestamp}'",
 									"type": "Expression"
 								},
 								"queryTimeout": "02:00:00",
