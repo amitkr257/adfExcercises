@@ -41,11 +41,11 @@
 				},
 				"inputs": [
 					{
-						"referenceName": "live_LS",
+						"referenceName": "SQL_GENERIC_DS",
 						"type": "DatasetReference",
 						"parameters": {
-							"schema": "dbo",
-							"tablename": "Branch"
+							"schemaName": "dbo",
+							"tableName": "Branch"
 						}
 					}
 				],
@@ -87,11 +87,11 @@
 						"partitionOption": "None"
 					},
 					"dataset": {
-						"referenceName": "live_LS",
+						"referenceName": "SQL_GENERIC_DS",
 						"type": "DatasetReference",
 						"parameters": {
-							"schema": "dbo",
-							"tablename": "HighWaterMark"
+							"schemaName": "dbo",
+							"tableName": "HighWaterMark"
 						}
 					}
 				}
@@ -123,11 +123,11 @@
 						"partitionOption": "None"
 					},
 					"dataset": {
-						"referenceName": "live_LS",
+						"referenceName": "SQL_GENERIC_DS",
 						"type": "DatasetReference",
 						"parameters": {
-							"schema": "dbo",
-							"tablename": "Agent"
+							"schemaName": "dbo",
+							"tableName": "Agent"
 						}
 					}
 				}
@@ -182,11 +182,11 @@
 				},
 				"inputs": [
 					{
-						"referenceName": "live_LS",
+						"referenceName": "SQL_GENERIC_DS",
 						"type": "DatasetReference",
 						"parameters": {
-							"schema": "dbo",
-							"tablename": "Agent"
+							"schemaName": "dbo",
+							"tableName": "Agent"
 						}
 					}
 				],
@@ -254,21 +254,21 @@
 				},
 				"inputs": [
 					{
-						"referenceName": "live_LS",
+						"referenceName": "SQL_GENERIC_DS",
 						"type": "DatasetReference",
 						"parameters": {
-							"schema": "dbo",
-							"tablename": "Agent"
+							"schemaName": "dbo",
+							"tableName": "HighWaterMark"
 						}
 					}
 				],
 				"outputs": [
 					{
-						"referenceName": "live_LS",
+						"referenceName": "SQL_GENERIC_DS",
 						"type": "DatasetReference",
 						"parameters": {
-							"schema": "dbo",
-							"tablename": "HighWaterMark"
+							"schemaName": "dbo",
+							"tableName": "HighWaterMark"
 						}
 					}
 				]

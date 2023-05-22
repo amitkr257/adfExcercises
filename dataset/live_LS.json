@@ -2,7 +2,7 @@
 	"name": "live_LS",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "SQL_TABLE_DS",
+			"referenceName": "AzureSqlDatabase1",
 			"type": "LinkedServiceReference"
 		},
 		"parameters": {
@@ -31,8 +31,14 @@
 			}
 		],
 		"typeProperties": {
-			"schema": "dbo",
-			"table": "HighWaterMark"
+			"schema": {
+				"value": "@dataset().schema",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().tablename",
+				"type": "Expression"
+			}
 		}
 	}
 }
